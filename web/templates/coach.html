@@ -96,6 +96,24 @@
       </div>
     </div>
 
+    <!-- Save button -->
+    {% if current_user.is_authenticated %}
+    <form method="post" action="{{ url_for('main.save_coach_attempt') }}" class="mt-3">
+      <input type="hidden" name="mode"      value="{{ practice_result.mode }}">
+      <input type="hidden" name="key_hex"   value="{{ practice_result.key_hex }}">
+      <input type="hidden" name="block_hex" value="{{ practice_result.block_hex }}">
+      <input type="hidden" name="correct"   value="{{ practice_result.correct_count }}">
+      <input type="hidden" name="total"     value="{{ practice_result.answered_count }}">
+      <button type="submit" class="btn-save-attempt">
+        <i class="bi bi-bookmark-plus-fill"></i> Save this attempt to my history
+      </button>
+    </form>
+    {% else %}
+    <p class="mt-3" style="font-size:0.82rem; color:var(--text-muted)">
+      <i class="bi bi-lock"></i> <a href="{{ url_for('auth.login') }}" style="color:var(--accent)">Log in</a> to save this attempt to your history.
+    </p>
+    {% endif %}
+
     <div class="coach-step-table mt-4">
       <div class="coach-step-row coach-step-head">
         <span>Step</span>
@@ -150,10 +168,7 @@
       <div>
         <div class="lesson-kicker" id="operationLabel">SubBytes</div>
         <h5 id="operationTitle">Byte substitution</h5>
-        <p id="operationBody">
-          SubBytes replaces every byte using the AES S-box. This is the main non-linear step, which
-          makes AES much harder to describe with simple equations.
-        </p>
+        <p id="operationBody">SubBytes replaces every byte using the AES S-box. This is the main non-linear step, which makes AES much harder to describe with simple equations.</p>
       </div>
       <div class="coach-state" aria-label="Example AES state">
         <span>19</span><span>a0</span><span>9a</span><span>e9</span>
@@ -168,9 +183,7 @@
 <div class="card-aes mb-4">
   <div class="card-body">
     <h5 class="mb-2">Build one encryption round</h5>
-    <p class="text-muted-aes small mb-3">
-      Click the operations in the correct order for AES rounds 1-9.
-    </p>
+    <p class="text-muted-aes small mb-3">Click the operations in the correct order for AES rounds 1-9.</p>
     <div class="coach-operation-grid mb-3">
       <button type="button" class="coach-pick" data-step="SubBytes">SubBytes</button>
       <button type="button" class="coach-pick" data-step="ShiftRows">ShiftRows</button>
@@ -217,111 +230,50 @@
 {% block scripts %}
 <script>
 const operationCopy = {
-  subbytes: {
-    label: 'SubBytes',
-    title: 'Byte substitution',
-    body: 'SubBytes replaces every byte using the AES S-box. This is the main non-linear step, which makes AES much harder to describe with simple equations.'
-  },
-  shiftrows: {
-    label: 'ShiftRows',
-    title: 'Move bytes across columns',
-    body: 'ShiftRows rotates the rows of the state. This spreads byte positions so later column mixing combines data from different parts of the block.'
-  },
-  mixcolumns: {
-    label: 'MixColumns',
-    title: 'Mix each column',
-    body: 'MixColumns combines the four bytes in each column using finite-field math. A one-byte change can influence the whole column.'
-  },
-  addroundkey: {
-    label: 'AddRoundKey',
-    title: 'Inject the round key',
-    body: 'AddRoundKey XORs the state with the round key. This is where the secret key directly changes the data during each round.'
-  },
-  keyexpansion: {
-    label: 'Key Expansion',
-    title: 'Create round keys',
-    body: 'AES-128 expands one 128-bit key into 44 words. Every round gets its own 128-bit round key made from four words.'
-  },
-  avalanche: {
-    label: 'Avalanche',
-    title: 'Small change, large effect',
-    body: 'Avalanche compares two encryptions. After enough rounds, a tiny input or key change should affect about half of the output bits.'
-  }
+  subbytes:    { label:'SubBytes',       title:'Byte substitution',       body:'SubBytes replaces every byte using the AES S-box. This is the main non-linear step, which makes AES much harder to describe with simple equations.' },
+  shiftrows:   { label:'ShiftRows',      title:'Move bytes across columns',body:'ShiftRows rotates the rows of the state. This spreads byte positions so later column mixing combines data from different parts of the block.' },
+  mixcolumns:  { label:'MixColumns',     title:'Mix each column',          body:'MixColumns combines the four bytes in each column using finite-field math. A one-byte change can influence the whole column.' },
+  addroundkey: { label:'AddRoundKey',    title:'Inject the round key',     body:'AddRoundKey XORs the state with the round key. This is where the secret key directly changes the data during each round.' },
+  keyexpansion:{ label:'Key Expansion',  title:'Create round keys',        body:'AES-128 expands one 128-bit key into 44 words. Every round gets its own 128-bit round key made from four words.' },
+  avalanche:   { label:'Avalanche',      title:'Small change, large effect',body:'Avalanche compares two encryptions. After enough rounds, a tiny input or key change should affect about half of the output bits.' }
 };
-
-document.querySelectorAll('.coach-chip').forEach((button) => {
+document.querySelectorAll('.coach-chip').forEach(button => {
   button.addEventListener('click', () => {
-    document.querySelectorAll('.coach-chip').forEach((b) => b.classList.remove('is-active'));
+    document.querySelectorAll('.coach-chip').forEach(b => b.classList.remove('is-active'));
     button.classList.add('is-active');
     const copy = operationCopy[button.dataset.op];
     document.getElementById('operationLabel').textContent = copy.label;
     document.getElementById('operationTitle').textContent = copy.title;
-    document.getElementById('operationBody').textContent = copy.body;
+    document.getElementById('operationBody').textContent  = copy.body;
   });
 });
-
 const chosenSteps = [];
-const correctSteps = ['SubBytes', 'ShiftRows', 'MixColumns', 'AddRoundKey'];
-const builder = document.getElementById('roundBuilder');
+const correctSteps = ['SubBytes','ShiftRows','MixColumns','AddRoundKey'];
+const builder  = document.getElementById('roundBuilder');
 const feedback = document.getElementById('roundFeedback');
-
 function renderBuilder() {
   builder.innerHTML = '';
-  if (chosenSteps.length === 0) {
-    builder.innerHTML = '<span class="builder-empty">Your selected order will appear here.</span>';
-    return;
-  }
-  chosenSteps.forEach((step, index) => {
-    const item = document.createElement('span');
-    item.textContent = `${index + 1}. ${step}`;
-    builder.appendChild(item);
-  });
+  if (!chosenSteps.length) { builder.innerHTML = '<span class="builder-empty">Your selected order will appear here.</span>'; return; }
+  chosenSteps.forEach((step, i) => { const el = document.createElement('span'); el.textContent = `${i+1}. ${step}`; builder.appendChild(el); });
 }
-
-document.querySelectorAll('.coach-pick').forEach((button) => {
-  button.addEventListener('click', () => {
-    if (chosenSteps.length >= 4) return;
-    chosenSteps.push(button.dataset.step);
-    renderBuilder();
-    feedback.textContent = '';
-  });
+document.querySelectorAll('.coach-pick').forEach(button => {
+  button.addEventListener('click', () => { if (chosenSteps.length >= 4) return; chosenSteps.push(button.dataset.step); renderBuilder(); feedback.textContent = ''; });
 });
-
 document.getElementById('checkRound').addEventListener('click', () => {
-  const isCorrect = correctSteps.every((step, index) => chosenSteps[index] === step);
-  if (chosenSteps.length < 4) {
-    feedback.textContent = 'Pick four operations first.';
-    feedback.className = 'coach-feedback mt-3 is-warning';
-  } else if (isCorrect) {
-    feedback.textContent = 'Correct. Rounds 1-9 use SubBytes, ShiftRows, MixColumns, then AddRoundKey.';
-    feedback.className = 'coach-feedback mt-3 is-good';
-  } else {
-    feedback.textContent = 'Not quite. The correct order is SubBytes, ShiftRows, MixColumns, AddRoundKey.';
-    feedback.className = 'coach-feedback mt-3 is-bad';
-  }
+  const ok = correctSteps.every((s,i) => chosenSteps[i] === s);
+  if (chosenSteps.length < 4) { feedback.textContent = 'Pick four operations first.'; feedback.className = 'coach-feedback mt-3 is-warning'; }
+  else if (ok) { feedback.textContent = 'Correct. Rounds 1-9 use SubBytes, ShiftRows, MixColumns, then AddRoundKey.'; feedback.className = 'coach-feedback mt-3 is-good'; }
+  else { feedback.textContent = 'Not quite. The correct order is SubBytes, ShiftRows, MixColumns, AddRoundKey.'; feedback.className = 'coach-feedback mt-3 is-bad'; }
 });
-
-document.getElementById('resetRound').addEventListener('click', () => {
-  chosenSteps.length = 0;
-  feedback.textContent = '';
-  renderBuilder();
-});
-
-let answered = 0;
-let score = 0;
-document.querySelectorAll('.quiz-question button').forEach((button) => {
+document.getElementById('resetRound').addEventListener('click', () => { chosenSteps.length = 0; feedback.textContent = ''; renderBuilder(); });
+let answered = 0, score = 0;
+document.querySelectorAll('.quiz-question button').forEach(button => {
   button.addEventListener('click', () => {
     const group = button.closest('.quiz-question');
     if (group.dataset.answered === 'true') return;
-    group.dataset.answered = 'true';
-    answered += 1;
-    if (button.dataset.answer === 'right') {
-      score += 1;
-      button.classList.add('is-right');
-    } else {
-      button.classList.add('is-wrong');
-      group.querySelector('[data-answer="right"]').classList.add('is-right');
-    }
+    group.dataset.answered = 'true'; answered++;
+    if (button.dataset.answer === 'right') { score++; button.classList.add('is-right'); }
+    else { button.classList.add('is-wrong'); group.querySelector('[data-answer="right"]').classList.add('is-right'); }
     document.getElementById('quizFeedback').textContent = `Score: ${score}/${answered}`;
   });
 });

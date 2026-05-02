@@ -1,38 +1,454 @@
-{% extends "base.html" %}
-{% block title %}Sign Up{% endblock %}
-{% block content %}
-<div class="auth-card">
-  <h2>Create Account</h2>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up | AES Again</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% for category, message in messages %}
-      <div class="alert alert-{{ category }}">{{ message }}</div>
-    {% endfor %}
-  {% endwith %}
+    :root {
+      --bg-page:       #070b12;
+      --bg-surface:    rgba(15, 23, 42, 0.86);
+      --bg-elevated:   rgba(30, 41, 59, 0.9);
+      --bg-input:      rgba(2, 8, 23, 0.72);
+      --border:        rgba(148, 163, 184, 0.18);
+      --border-focus:  #22d3ee;
+      --text-primary:  #f8fafc;
+      --text-secondary:#b6c2d2;
+      --text-muted:    #7f8da3;
+      --accent:        #22d3ee;
+      --accent-hover:  #67e8f9;
+      --accent-soft:   rgba(34, 211, 238, 0.13);
+      --danger:        #fb7185;
+      --success:       #34d399;
+      --warning:       #fbbf24;
+      --font-sans:     'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono:     'JetBrains Mono', 'Consolas', monospace;
+      --radius:        14px;
+      --radius-sm:     10px;
+      --shadow:        0 24px 70px rgba(0,0,0,0.38);
+    }
 
-  <form method="POST" novalidate>
-    <label for="username">Username</label>
-    <input id="username" name="username" type="text"
-           value="{{ username }}" autocomplete="username"
-           placeholder="3–32 chars, letters/numbers/underscores" required>
+    html, body {
+      min-height: 100%;
+      font-family: var(--font-sans);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+    }
 
-    <label for="email">Email</label>
-    <input id="email" name="email" type="email"
-           value="{{ email }}" autocomplete="email"
-           placeholder="you@example.com" required>
+    body {
+      background:
+        radial-gradient(circle at 20% 0%,  rgba(34,211,238,0.14), transparent 34rem),
+        radial-gradient(circle at 85% 12%, rgba(52,211,153,0.09), transparent 28rem),
+        linear-gradient(180deg, #070b12 0%, #0b1120 45%, #070b12 100%);
+      min-height: 100vh;
+    }
 
-    <label for="password">Password</label>
-    <input id="password" name="password" type="password"
-           autocomplete="new-password"
-           placeholder="At least 8 characters" required>
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(148,163,184,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148,163,184,0.06) 1px, transparent 1px);
+      background-size: 34px 34px;
+      opacity: 0.55;
+      pointer-events: none;
+      z-index: 0;
+    }
 
-    <label for="confirm_password">Confirm Password</label>
-    <input id="confirm_password" name="confirm_password" type="password"
-           autocomplete="new-password" required>
+    .page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+      position: relative;
+      z-index: 1;
+    }
 
-    <button type="submit" class="btn-primary">Create Account</button>
-  </form>
+    .top-bar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      padding: 0.9rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(7,11,18,0.82);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--border);
+      z-index: 10;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.62rem;
+      text-decoration: none;
+    }
+    .brand-mark {
+      width: 2.2rem; height: 2.2rem;
+      background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(52,211,153,0.12));
+      border: 1px solid rgba(34,211,238,0.35);
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      color: var(--accent);
+    }
+    .brand-name {
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+    .back-link {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .back-link:hover { color: var(--accent); }
 
-  <p class="auth-switch">Already have an account? <a href="{{ url_for('auth.login') }}">Log in</a></p>
-</div>
-{% endblock %}
+    .card {
+      width: 100%;
+      max-width: 440px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2.25rem 2rem;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+      animation: fadeUp 0.35s ease both;
+      margin-top: 4.5rem;
+      margin-bottom: 2rem;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    h1 {
+      font-weight: 700;
+      font-size: 1.55rem;
+      letter-spacing: -0.03em;
+      color: var(--text-primary);
+      margin-bottom: 0.3rem;
+    }
+    .subtitle {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-bottom: 1.35rem;
+      line-height: 1.5;
+    }
+
+    /* perks */
+    .perks {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      margin-bottom: 1.5rem;
+      padding: 0.85rem 1rem;
+      background: var(--accent-soft);
+      border: 1px solid rgba(34,211,238,0.2);
+      border-radius: var(--radius-sm);
+    }
+    .perks li {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+    }
+    .perks li i { color: var(--accent); font-size: 0.8rem; }
+
+    /* alerts */
+    .alerts { margin-bottom: 1.1rem; }
+    .alert {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      padding: 0.7rem 0.9rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.84rem;
+      margin-bottom: 0.5rem;
+      line-height: 1.4;
+    }
+    .alert-danger  { background: rgba(251,113,133,0.12); border: 1px solid rgba(251,113,133,0.3); color: #fb7185; }
+    .alert-success { background: rgba(52,211,153,0.10);  border: 1px solid rgba(52,211,153,0.3);  color: #34d399; }
+    .alert-info    { background: rgba(34,211,238,0.10);  border: 1px solid rgba(34,211,238,0.3);  color: #22d3ee; }
+
+    .field { margin-bottom: 1rem; }
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 0.38rem;
+      letter-spacing: 0.02em;
+    }
+    .hint {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      margin-top: 0.3rem;
+    }
+
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .input-icon {
+      position: absolute;
+      left: 0.85rem;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      pointer-events: none;
+    }
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.65rem 2.5rem 0.65rem 2.5rem;
+      color: var(--text-primary);
+      font-size: 0.92rem;
+      font-family: var(--font-sans);
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 4px rgba(34,211,238,0.12);
+    }
+    input::placeholder { color: var(--text-muted); }
+
+    .pw-toggle {
+      position: absolute;
+      right: 0.8rem;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.95rem;
+      padding: 0;
+      line-height: 1;
+      transition: color 0.15s;
+    }
+    .pw-toggle:hover { color: var(--accent); }
+
+    /* strength bar */
+    .pw-strength { margin-top: 0.4rem; display: none; }
+    .pw-strength.visible { display: block; }
+    .strength-track {
+      height: 3px;
+      border-radius: 2px;
+      background: var(--border);
+      overflow: hidden;
+      margin-bottom: 0.28rem;
+    }
+    .strength-fill {
+      height: 100%;
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.3s, background 0.3s;
+    }
+    .strength-label { font-size: 0.72rem; color: var(--text-muted); }
+
+    .btn-submit {
+      width: 100%;
+      margin-top: 0.4rem;
+      padding: 0.72rem;
+      background: linear-gradient(135deg, var(--accent), #34d399);
+      color: #020817;
+      border: none;
+      border-radius: 999px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      box-shadow: 0 12px 28px rgba(34,211,238,0.16);
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn-submit:hover  { opacity: 0.9; }
+    .btn-submit:active { transform: scale(0.98); }
+
+    .divider {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      margin: 1.35rem 0;
+      position: relative;
+    }
+    .divider::before, .divider::after {
+      content: ''; position: absolute; top: 50%;
+      width: 42%; height: 1px; background: var(--border);
+    }
+    .divider::before { left: 0; }
+    .divider::after  { right: 0; }
+
+    .switch {
+      text-align: center;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+    .switch a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .switch a:hover { color: var(--accent-hover); text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <a href="{{ url_for('main.index') }}" class="brand">
+      <div class="brand-mark"><i class="bi bi-shield-lock-fill"></i></div>
+      <span class="brand-name">AES Again</span>
+    </a>
+    <a href="{{ url_for('main.index') }}" class="back-link">
+      <i class="bi bi-arrow-left"></i> Back to app
+    </a>
+  </div>
+
+  <div class="page">
+    <div class="card">
+      <h1>Create account</h1>
+      <p class="subtitle">Free forever. Save your AES Coach results and encryption history.</p>
+
+      <ul class="perks">
+        <li><i class="bi bi-check-circle-fill"></i> Save AES Coach test attempts</li>
+        <li><i class="bi bi-check-circle-fill"></i> Track encryption &amp; decryption history</li>
+        <li><i class="bi bi-check-circle-fill"></i> Access your data from any device</li>
+      </ul>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="alerts">
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }}">
+                <i class="bi bi-{% if category == 'danger' %}exclamation-circle-fill{% elif category == 'success' %}check-circle-fill{% else %}info-circle-fill{% endif %}"></i>
+                {{ message }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" novalidate>
+
+        <div class="field">
+          <label for="username">Username</label>
+          <div class="input-wrap">
+            <i class="bi bi-at input-icon"></i>
+            <input id="username" name="username" type="text"
+                   value="{{ username }}" autocomplete="username"
+                   placeholder="your_handle" required autofocus>
+          </div>
+          <p class="hint">3–32 characters · letters, numbers, underscores only</p>
+        </div>
+
+        <div class="field">
+          <label for="email">Email</label>
+          <div class="input-wrap">
+            <i class="bi bi-envelope input-icon"></i>
+            <input id="email" name="email" type="email"
+                   value="{{ email }}" autocomplete="email"
+                   placeholder="you@example.com" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="input-wrap">
+            <i class="bi bi-lock input-icon"></i>
+            <input id="password" name="password" type="password"
+                   autocomplete="new-password" placeholder="Min. 8 characters" required
+                   oninput="checkStrength(this.value)">
+            <button type="button" class="pw-toggle" onclick="togglePw('password',this)" aria-label="Show password">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+          <div class="pw-strength" id="strengthWrap">
+            <div class="strength-track"><div class="strength-fill" id="strengthFill"></div></div>
+            <span class="strength-label" id="strengthLabel"></span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="confirm_password">Confirm Password</label>
+          <div class="input-wrap">
+            <i class="bi bi-lock-fill input-icon"></i>
+            <input id="confirm_password" name="confirm_password" type="password"
+                   autocomplete="new-password" placeholder="Repeat your password" required>
+            <button type="button" class="pw-toggle" onclick="togglePw('confirm_password',this)" aria-label="Show password">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit">
+          <i class="bi bi-person-plus-fill"></i> Create Account
+        </button>
+      </form>
+
+      <div class="divider">already have an account?</div>
+      <p class="switch"><a href="{{ url_for('auth.login') }}">Log in instead</a></p>
+    </div>
+  </div>
+
+  <script>
+    function togglePw(id, btn) {
+      const inp  = document.getElementById(id);
+      const icon = btn.querySelector('i');
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        icon.className = 'bi bi-eye-slash';
+        btn.setAttribute('aria-label', 'Hide password');
+      } else {
+        inp.type = 'password';
+        icon.className = 'bi bi-eye';
+        btn.setAttribute('aria-label', 'Show password');
+      }
+    }
+
+    function checkStrength(val) {
+      const wrap  = document.getElementById('strengthWrap');
+      const fill  = document.getElementById('strengthFill');
+      const label = document.getElementById('strengthLabel');
+      if (!val) { wrap.classList.remove('visible'); return; }
+      wrap.classList.add('visible');
+      let score = 0;
+      if (val.length >= 8)  score++;
+      if (val.length >= 12) score++;
+      if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
+      if (/\d/.test(val))   score++;
+      if (/[^A-Za-z0-9]/.test(val)) score++;
+      const levels = [
+        { pct: '20%', color: '#fb7185', text: 'Very weak'   },
+        { pct: '40%', color: '#fbbf24', text: 'Weak'        },
+        { pct: '60%', color: '#fbbf24', text: 'Fair'        },
+        { pct: '80%', color: '#34d399', text: 'Strong'      },
+        { pct:'100%', color: '#22d3ee', text: 'Very strong' },
+      ];
+      const lvl = levels[Math.min(score - 1, 4)] || levels[0];
+      fill.style.width      = lvl.pct;
+      fill.style.background = lvl.color;
+      label.textContent     = lvl.text;
+      label.style.color     = lvl.color;
+    }
+  </script>
+</body>
+</html>

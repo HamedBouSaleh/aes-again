@@ -6,10 +6,7 @@
 
 <div class="learn-panel mb-4">
   <h5>What this page teaches</h5>
-  <p class="mb-0">
-    AES stores one block as a 4 by 4 byte state. Round 0 only adds the key, rounds 1-9 use all four
-    AES steps, and round 10 skips MixColumns.
-  </p>
+  <p class="mb-0">AES stores one block as a 4 by 4 byte state. Round 0 only adds the key, rounds 1-9 use all four AES steps, and round 10 skips MixColumns.</p>
 </div>
 
 {% if error %}
@@ -24,8 +21,8 @@
           <label class="form-label-aes form-label">Key (32 hex chars)</label>
           <div class="input-group">
             <input type="text" name="key" class="form-control form-control-aes" value="{{ key }}" placeholder="000102030405060708090a0b0c0d0e0f" maxlength="64">
-            <button type="button" class="btn btn-rand" title="Random key" data-random-target="key" data-random-type="key"><i class="bi bi-dice-5"></i></button>
-            <button type="button" class="btn btn-rand" title="Clear key" data-clear-target="key"><i class="bi bi-x-lg"></i></button>
+            <button type="button" class="btn btn-rand" title="Random key"  data-random-target="key"   data-random-type="key"><i class="bi bi-dice-5"></i></button>
+            <button type="button" class="btn btn-rand" title="Clear key"   data-clear-target="key"><i class="bi bi-x-lg"></i></button>
           </div>
           <div class="plaintext-helper" data-target="key" data-label="key text">
             <div class="input-mode-toggle" aria-label="Key input mode">
@@ -44,7 +41,7 @@
           <div class="input-group">
             <input type="text" name="block" class="form-control form-control-aes" value="{{ block }}" placeholder="00112233445566778899aabbccddeeff" maxlength="64">
             <button type="button" class="btn btn-rand" title="Random block" data-random-target="block" data-random-type="block"><i class="bi bi-dice-5"></i></button>
-            <button type="button" class="btn btn-rand" title="Clear block" data-clear-target="block"><i class="bi bi-x-lg"></i></button>
+            <button type="button" class="btn btn-rand" title="Clear block"  data-clear-target="block"><i class="bi bi-x-lg"></i></button>
           </div>
           <div class="plaintext-helper" data-target="block" data-label="message text">
             <div class="input-mode-toggle" aria-label="Data block input mode">
@@ -77,25 +74,37 @@
 {% if steps_data %}
 <div class="card-aes">
   <div class="card-body">
-    <h5 class="mb-2">Steps</h5>
+    <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+      <h5 class="mb-0">Steps</h5>
+      <!-- Save button -->
+      {% if current_user.is_authenticated %}
+      <form method="post" action="{{ url_for('main.save_encryption_attempt') }}">
+        <input type="hidden" name="tool_name" value="single_round">
+        <input type="hidden" name="mode"      value="encrypt">
+        <input type="hidden" name="key_hex"   value="{{ key }}">
+        <input type="hidden" name="input_hex" value="{{ block }}">
+        <button type="submit" class="btn-save-attempt">
+          <i class="bi bi-bookmark-plus-fill"></i> Save to my history
+        </button>
+      </form>
+      {% else %}
+      <a href="{{ url_for('auth.login') }}" style="font-size:0.82rem; color:var(--text-muted)">
+        <i class="bi bi-lock"></i> <span style="color:var(--accent)">Log in</span> to save
+      </a>
+      {% endif %}
+    </div>
     <p class="text-muted-aes small mb-4">Read each grid as the AES state after that operation has finished.</p>
+
     {% for name, grid in steps_data %}
     <div class="mb-4">
       <div class="state-label">{{ name }}</div>
       <div class="step-explain">
-        {% if "Initial state" in name %}
-        The state entering this round, after all earlier rounds.
-        {% elif "SubBytes" in name %}
-        Each byte is replaced using the S-box, adding non-linearity.
-        {% elif "ShiftRows" in name %}
-        Rows rotate left, moving bytes into new columns.
-        {% elif "MixColumns" in name %}
-        Each column is mathematically mixed to spread byte changes.
-        {% elif "AddRoundKey" in name %}
-        The state is XORed with this round's key. This output becomes the next round's initial state.
-        {% else %}
-        Intermediate state for this round.
-        {% endif %}
+        {% if "Initial state" in name %}The state entering this round, after all earlier rounds.
+        {% elif "SubBytes" in name %}Each byte is replaced using the S-box, adding non-linearity.
+        {% elif "ShiftRows" in name %}Rows rotate left, moving bytes into new columns.
+        {% elif "MixColumns" in name %}Each column is mathematically mixed to spread byte changes.
+        {% elif "AddRoundKey" in name %}The state is XORed with this round's key. This output becomes the next round's initial state.
+        {% else %}Intermediate state for this round.{% endif %}
       </div>
       <div class="state-block"><pre>{{ grid }}</pre></div>
     </div>
@@ -103,7 +112,7 @@
 
     <div class="round-nav">
       <form method="post">
-        <input type="hidden" name="key" value="{{ key }}">
+        <input type="hidden" name="key"   value="{{ key }}">
         <input type="hidden" name="block" value="{{ block }}">
         <input type="hidden" name="round" value="{{ round_idx - 1 }}">
         <button type="submit" class="btn btn-aes-outline" {% if round_idx <= 0 %}disabled{% endif %}>
@@ -112,7 +121,7 @@
       </form>
       <div class="round-nav-current">Round {{ round_idx }} of 10</div>
       <form method="post">
-        <input type="hidden" name="key" value="{{ key }}">
+        <input type="hidden" name="key"   value="{{ key }}">
         <input type="hidden" name="block" value="{{ block }}">
         <input type="hidden" name="round" value="{{ round_idx + 1 }}">
         <button type="submit" class="btn btn-aes" {% if round_idx >= 10 %}disabled{% endif %}>
@@ -123,5 +132,4 @@
   </div>
 </div>
 {% endif %}
-
 {% endblock %}
