@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}AES Again{% endblock %} | EECE 455 Project 7</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-aes sticky-top">
+    <div class="container">
+      <a class="navbar-brand" href="{{ url_for('main.index') }}">
+        <span class="brand-mark"><i class="bi bi-shield-lock-fill"></i></span>
+        <span>AES Again</span>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="nav">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'main.index' else '' }}" href="{{ url_for('main.index') }}">Home</a></li>
+          <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'main.single_round' else '' }}" href="{{ url_for('main.single_round') }}">Single Round</a></li>
+          <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'main.full_aes' else '' }}" href="{{ url_for('main.full_aes') }}">Full AES</a></li>
+          <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'main.avalanche' else '' }}" href="{{ url_for('main.avalanche') }}">Avalanche</a></li>
+          <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'main.key_expansion_page' else '' }}" href="{{ url_for('main.key_expansion_page') }}">Key Expansion</a></li>
+          <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'main.sbox' else '' }}" href="{{ url_for('main.sbox') }}">S-box / Rcon</a></li>
+          <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'main.word_doc' else '' }}" href="{{ url_for('main.word_doc') }}">File Encrypt / Decrypt</a></li>
+        </ul>
+        <div class="nav-utility d-flex align-items-center gap-2">
+          <a class="btn btn-outline-light btn-self-test {{ 'active' if request.endpoint == 'main.coach' else '' }}" href="{{ url_for('main.coach') }}">
+            <i class="bi bi-stars"></i>
+            <span>AES Coach</span>
+          </a>
+
+          {% if current_user.is_authenticated %}
+            <span class="text-light small">{{ current_user.username }}</span>
+            <a class="btn btn-outline-light btn-sm" href="{{ url_for('auth.logout') }}">Log out</a>
+          {% else %}
+            <a class="btn btn-outline-light btn-sm" href="{{ url_for('auth.login') }}">Log in</a>
+            <a class="btn btn-light btn-sm text-dark" href="{{ url_for('auth.signup') }}">Sign up</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main-wrap">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer-aes">
+    EECE 455 Project 7 — AES Again. 
+  </footer>
+
+  <button type="button" class="back-to-top" id="backToTop" aria-label="Back to top" title="Back to top">
+    <i class="bi bi-arrow-up"></i>
+    <span>Top</span>
+  </button>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const backToTop = document.getElementById('backToTop');
+
+    function updateBackToTop() {
+      backToTop.classList.toggle('is-visible', window.scrollY > 300);
+    }
+
+    backToTop.addEventListener('click', function() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    window.addEventListener('scroll', updateBackToTop, { passive: true });
+    updateBackToTop();
+
+    function textToSingleBlockHex(text) {
+      const encoded = new TextEncoder().encode(text);
+      const block = new Uint8Array(16);
+      block.set(encoded.slice(0, 16));
+      const hex = Array.from(block, (byte) => byte.toString(16).padStart(2, '0')).join('');
+      let note = 'Exactly 16 bytes converted to one AES block.';
+      if (encoded.length < 16) {
+        note = `Text was ${encoded.length} byte(s), so ${16 - encoded.length} zero byte(s) were added.`;
+      } else if (encoded.length > 16) {
+        note = `Text was ${encoded.length} byte(s). AES here uses one block, so only the first 16 bytes were used.`;
+      }
+      return { hex, note };
+    }
+
+    document.querySelectorAll('.plaintext-helper').forEach((helper) => {
+      const source = helper.querySelector('.plaintext-source');
+      const apply = helper.querySelector('.plaintext-apply');
+      const status = helper.querySelector('.plaintext-status');
+      const targetName = helper.dataset.target;
+      const label = helper.dataset.label || 'text';
+      const hexMode = helper.querySelector('[data-mode="hex"]');
+      const textMode = helper.querySelector('[data-mode="text"]');
+      const textPanel = helper.querySelector('.plaintext-panel');
+
+      function setMode(mode) {
+        const target = document.querySelector(`input[name="${targetName}"]`);
+        const isText = mode === 'text';
+        helper.dataset.mode = mode;
+        hexMode.classList.toggle('is-active', !isText);
+        textMode.classList.toggle('is-active', isText);
+        textPanel.hidden = !isText;
+        if (target) {
+          target.readOnly = isText;
+          target.classList.toggle('converted-from-text', isText);
+          target.title = isText ? 'Generated from text mode' : '';
+        }
+        if (!isText) {
+          status.textContent = 'Hex mode: type or paste exactly 32 hex characters.';
+          status.classList.remove('is-warning');
+        } else {
+          status.textContent = `Text mode: enter ${label}, then convert it to one AES block.`;
+          status.classList.remove('is-warning');
+        }
+      }
+
+      hexMode.addEventListener('click', () => setMode('hex'));
+      textMode.addEventListener('click', () => setMode('text'));
+
+      apply.addEventListener('click', () => {
+        const target = document.querySelector(`input[name="${targetName}"]`);
+        if (!target) return;
+        const text = source.value;
+        if (!text) {
+          status.textContent = `Enter ${label} first.`;
+          status.classList.add('is-warning');
+          return;
+        }
+        const converted = textToSingleBlockHex(text);
+        target.value = converted.hex;
+        status.textContent = converted.note;
+        status.classList.remove('is-warning');
+      });
+
+      helper.closest('form')?.addEventListener('submit', () => {
+        if (helper.dataset.mode !== 'text' || !source.value) return;
+        const target = document.querySelector(`input[name="${targetName}"]`);
+        if (target) target.value = textToSingleBlockHex(source.value).hex;
+      });
+
+      setMode('hex');
+    });
+
+    document.querySelectorAll('[data-clear-target]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const target = document.querySelector(`input[name="${button.dataset.clearTarget}"]`);
+        if (target) target.value = '';
+        const helper = document.querySelector(`.plaintext-helper[data-target="${button.dataset.clearTarget}"]`);
+        if (helper) {
+          helper.querySelector('.plaintext-source').value = '';
+          helper.querySelector('.plaintext-status').textContent = '';
+          helper.querySelector('[data-mode="hex"]')?.click();
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-random-target]').forEach((button) => {
+      button.addEventListener('click', () => {
+        if (button.disabled) return;
+        const target = document.querySelector(`input[name="${button.dataset.randomTarget}"]`);
+        const endpoint = button.dataset.randomType === 'key'
+          ? '{{ url_for("main.api_random_key") }}'
+          : '{{ url_for("main.api_random_block") }}';
+        fetch(endpoint).then(r => r.json()).then((data) => {
+          target.value = button.dataset.randomType === 'key' ? data.key : data.block;
+        });
+      });
+    });
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

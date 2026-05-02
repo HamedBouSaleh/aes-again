@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+{% block title %}Avalanche{% endblock %}
+{% block content %}
+<h1 class="page-title">Avalanche</h1>
+<p class="page-subtitle">Compare two encryptions and see bit mismatch per round (out of 128 bits).</p>
+
+<div class="learn-panel mb-4">
+  <h5>What avalanche means</h5>
+  <p class="mb-0">
+    Avalanche shows how a small key or block change spreads. Later rounds should often approach about
+    64 changed bits out of 128.
+  </p>
+</div>
+
+<div class="educational-grid mb-4">
+  <div class="mini-lesson">
+    <div class="lesson-kicker">Same key</div>
+    <p>Only the data block changes.</p>
+  </div>
+  <div class="mini-lesson">
+    <div class="lesson-kicker">Same block</div>
+    <p>Only the key changes.</p>
+  </div>
+  <div class="mini-lesson">
+    <div class="lesson-kicker">Target</div>
+    <p>Near 64 mismatches means strong diffusion.</p>
+  </div>
+</div>
+
+{% if error %}
+<div class="alert-aes alert-aes-danger mb-4">{{ error }}</div>
+{% endif %}
+
+<div class="card-aes mb-4">
+  <div class="card-body">
+    <form method="post">
+      <div class="row g-3">
+        <div class="col-md-6 avalanche-field" data-field="key1">
+          <label class="form-label-aes form-label">Key 1 (32 hex)</label>
+          <div class="input-group">
+            <input type="text" name="key1" class="form-control form-control-aes" value="{{ key1 }}" maxlength="64">
+            <button type="button" class="btn btn-rand" title="Random key" data-random-target="key1" data-random-type="key"><i class="bi bi-dice-5"></i></button>
+            <button type="button" class="btn btn-rand" title="Clear key 1" data-clear-target="key1"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <div class="plaintext-helper" data-target="key1" data-label="key 1 text">
+            <div class="input-mode-toggle" aria-label="Key 1 input mode">
+              <button type="button" data-mode="hex">Hex</button>
+              <button type="button" data-mode="text">Text</button>
+            </div>
+            <div class="plaintext-panel" hidden>
+              <input type="text" class="plaintext-source" placeholder="Type key 1 as text">
+              <button type="button" class="plaintext-apply">Convert</button>
+            </div>
+            <div class="plaintext-status"></div>
+          </div>
+        </div>
+        <div class="col-md-6 avalanche-field" data-field="block1">
+          <label class="form-label-aes form-label">Block 1 (32 hex)</label>
+          <div class="input-group">
+            <input type="text" name="block1" class="form-control form-control-aes" value="{{ block1 }}" maxlength="64">
+            <button type="button" class="btn btn-rand" title="Random block" data-random-target="block1" data-random-type="block"><i class="bi bi-dice-5"></i></button>
+            <button type="button" class="btn btn-rand" title="Clear block 1" data-clear-target="block1"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <div class="plaintext-helper" data-target="block1" data-label="block 1 text">
+            <div class="input-mode-toggle" aria-label="Block 1 input mode">
+              <button type="button" data-mode="hex">Hex</button>
+              <button type="button" data-mode="text">Text</button>
+            </div>
+            <div class="plaintext-panel" hidden>
+              <input type="text" class="plaintext-source" placeholder="Type first message">
+              <button type="button" class="plaintext-apply">Convert</button>
+            </div>
+            <div class="plaintext-status"></div>
+          </div>
+        </div>
+        <div class="col-md-6 avalanche-field" data-field="key2">
+          <label class="form-label-aes form-label">Key 2 (for same-block mode)</label>
+          <div class="input-group">
+            <input type="text" name="key2" class="form-control form-control-aes" value="{{ key2 }}" maxlength="64">
+            <button type="button" class="btn btn-rand" title="Random key" data-random-target="key2" data-random-type="key"><i class="bi bi-dice-5"></i></button>
+            <button type="button" class="btn btn-rand" title="Clear key 2" data-clear-target="key2"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <div class="plaintext-helper" data-target="key2" data-label="key 2 text">
+            <div class="input-mode-toggle" aria-label="Key 2 input mode">
+              <button type="button" data-mode="hex">Hex</button>
+              <button type="button" data-mode="text">Text</button>
+            </div>
+            <div class="plaintext-panel" hidden>
+              <input type="text" class="plaintext-source" placeholder="Type key 2 as text">
+              <button type="button" class="plaintext-apply">Convert</button>
+            </div>
+            <div class="plaintext-status"></div>
+          </div>
+        </div>
+        <div class="col-md-6 avalanche-field" data-field="block2">
+          <label class="form-label-aes form-label">Block 2 (for same-key mode)</label>
+          <div class="input-group">
+            <input type="text" name="block2" class="form-control form-control-aes" value="{{ block2 }}" maxlength="64">
+            <button type="button" class="btn btn-rand" title="Random block" data-random-target="block2" data-random-type="block"><i class="bi bi-dice-5"></i></button>
+            <button type="button" class="btn btn-rand" title="Clear block 2" data-clear-target="block2"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <div class="plaintext-helper" data-target="block2" data-label="block 2 text">
+            <div class="input-mode-toggle" aria-label="Block 2 input mode">
+              <button type="button" data-mode="hex">Hex</button>
+              <button type="button" data-mode="text">Text</button>
+            </div>
+            <div class="plaintext-panel" hidden>
+              <input type="text" class="plaintext-source" placeholder="Type second message">
+              <button type="button" class="plaintext-apply">Convert</button>
+            </div>
+            <div class="plaintext-status"></div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="mode" id="modeKey" value="same_key" {% if mode == 'same_key' %}checked{% endif %}>
+            <label class="form-check-label text-secondary" for="modeKey">Same key, different block</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="mode" id="modeBlock" value="same_block" {% if mode == 'same_block' %}checked{% endif %}>
+            <label class="form-check-label text-secondary" for="modeBlock">Same block, different key</label>
+          </div>
+          <button type="submit" class="btn btn-aes ms-3">Run Avalanche</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if result %}
+<div class="card-aes">
+  <div class="card-body">
+    <h5 class="mb-4">Bit mismatch after each round (out of 128)</h5>
+    <p class="step-explain">
+      Larger values mean the two encryptions are becoming more different.
+    </p>
+    <p class="step-explain">
+      {% if result.mode == "same_key" %}
+      Same key mode: the mismatch comes from changing the data block.
+      {% else %}
+      Same block mode: the mismatch comes from changing the key.
+      {% endif %}
+    </p>
+    <div class="avalanche-summary mb-4">
+      <div class="avalanche-summary-card">
+        <div class="lesson-kicker">Encryption 1</div>
+        <div><strong>Key</strong><code>{{ result.key1_hex }}</code></div>
+        <div><strong>Block</strong><code>{{ result.block1_hex }}</code></div>
+      </div>
+      <div class="avalanche-summary-card">
+        <div class="lesson-kicker">Encryption 2</div>
+        <div><strong>Key</strong><code>{{ result.key2_hex }}</code></div>
+        <div><strong>Block</strong><code>{{ result.block2_hex }}</code></div>
+      </div>
+    </div>
+
+    <div class="avalanche-stat-grid mb-4">
+      <div class="avalanche-stat-card">
+        <span>Changed input bits</span>
+        <strong>
+          {% if result.mode == "same_key" %}
+          {{ result.block_diff_bits }}
+          {% else %}
+          {{ result.key_diff_bits }}
+          {% endif %}
+        </strong>
+        <small>
+          {% if result.mode == "same_key" %}
+          block bits differ before encryption
+          {% else %}
+          key bits differ before encryption
+          {% endif %}
+        </small>
+      </div>
+      <div class="avalanche-stat-card">
+        <span>Final mismatch</span>
+        <strong>{{ result.final_mismatch }}/128</strong>
+        <small>{{ result.final_percent }}% of ciphertext bits changed</small>
+      </div>
+      <div class="avalanche-stat-card">
+        <span>Average mismatch</span>
+        <strong>{{ result.average_mismatch }}</strong>
+        <small>mean across all 11 round states</small>
+      </div>
+      <div class="avalanche-stat-card">
+        <span>Closest to ideal</span>
+        <strong>Round {{ result.closest_round }}</strong>
+        <small>{{ result.closest_mismatch }} bits, target is 64</small>
+      </div>
+    </div>
+
+    <div class="avalanche-graphs mb-4">
+      <div class="avalanche-graph-panel">
+        <div class="graph-title">
+          <span>Mismatch trend</span>
+          <small>Round-by-round movement toward the 64-bit target</small>
+        </div>
+        <div class="avalanche-line-wrap" aria-label="Line graph of bit mismatch by AES round">
+          <svg class="avalanche-line-chart" viewBox="0 0 100 100" preserveAspectRatio="none" role="img">
+            <line x1="0" y1="50" x2="100" y2="50" class="target-line"></line>
+            <polyline points="{% for point in result.round_points %}{{ point.x }},{{ point.y }} {% endfor %}" class="mismatch-line"></polyline>
+            {% for point in result.round_points %}
+            <circle cx="{{ point.x }}" cy="{{ point.y }}" r="1.8" class="mismatch-point"></circle>
+            {% endfor %}
+          </svg>
+          <div class="chart-scale chart-scale-top">128</div>
+          <div class="chart-target-label">64-bit target</div>
+          <div class="chart-scale chart-scale-bottom">0</div>
+          <div class="chart-y-label">Bit mismatch</div>
+        </div>
+        <div class="chart-x-label">AES round number</div>
+        <div class="round-axis">
+          {% for point in result.round_points %}
+          <span>{{ point.round }}</span>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="avalanche-graph-panel">
+        <div class="graph-title">
+          <span>Mismatch by round</span>
+          <small>Bars use the inputted block/key comparison</small>
+        </div>
+        <div class="avalanche-bars">
+          {% for point in result.round_points %}
+          <div class="avalanche-bar-row">
+            <span>R{{ point.round }}</span>
+            <div class="avalanche-bar-track">
+              <div class="avalanche-bar-fill" style="width: {{ point.bar_width }}%"></div>
+            </div>
+            <code>{{ point.mismatch }}</code>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="avalanche-insight mb-4">
+      <div>
+        <strong>Strongest diffusion</strong>
+        <span>Round {{ result.max_round }} reached {{ result.max_mismatch }} changed bits.</span>
+      </div>
+      <div>
+        <strong>Lowest mismatch</strong>
+        <span>Round {{ result.min_round }} had {{ result.min_mismatch }} changed bits.</span>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-aes">
+        <thead><tr><th>Round</th><th>Bit mismatch</th><th>Percent</th><th>How to interpret it</th></tr></thead>
+        <tbody>
+        {% for point in result.round_points %}
+        <tr>
+          <td>{{ point.round }}</td>
+          <td><span class="hex-value">{{ point.mismatch }}</span></td>
+          <td>{{ point.percent }}%</td>
+          <td>
+            {% if point.round == 0 %}
+            Initial key addition.
+            {% elif point.round < 4 %}
+            Early diffusion.
+            {% elif point.round < 10 %}
+            Diffusion is spreading.
+            {% else %}
+            Final ciphertext comparison.
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+<script>
+function syncAvalancheMode() {
+  const mode = document.querySelector('input[name="mode"]:checked')?.value || 'same_key';
+  const key2Field = document.querySelector('[data-field="key2"]');
+  const block2Field = document.querySelector('[data-field="block2"]');
+
+  function setDisabled(field, disabled, message) {
+    if (!field) return;
+    field.classList.toggle('is-disabled-field', disabled);
+    field.querySelectorAll('input[type="text"]').forEach((control) => {
+      control.readOnly = disabled;
+    });
+    field.querySelectorAll('button').forEach((control) => {
+      control.disabled = disabled;
+    });
+    let note = field.querySelector('.field-mode-note');
+    if (!note) {
+      note = document.createElement('div');
+      note.className = 'field-mode-note';
+      field.appendChild(note);
+    }
+    note.textContent = disabled ? message : '';
+  }
+
+  setDisabled(key2Field, mode === 'same_key', 'Not used in same-key mode; Key 1 is reused.');
+  setDisabled(block2Field, mode === 'same_block', 'Not used in same-block mode; Block 1 is reused.');
+}
+
+document.querySelectorAll('input[name="mode"]').forEach((radio) => {
+  radio.addEventListener('change', syncAvalancheMode);
+});
+syncAvalancheMode();
+</script>
+{% endblock %}

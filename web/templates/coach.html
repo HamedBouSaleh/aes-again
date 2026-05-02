@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+{% block title %}AES Coach{% endblock %}
+{% block content %}
+<h1 class="page-title">AES Coach</h1>
+<p class="page-subtitle">An interactive practice page for understanding AES before using the tools.</p>
+
+<div class="learn-panel mb-4">
+  <h5>How to use this page</h5>
+  <p class="mb-0">
+    Pick an AES operation to see what it does, then try building the correct encryption round order.
+    The goal is to make the required project features easier to understand before reading the hex output.
+  </p>
+</div>
+
+{% if error %}
+<div class="alert-aes alert-aes-danger mb-4">{{ error }}</div>
+{% endif %}
+
+<div class="card-aes mb-4">
+  <div class="card-body">
+    <h5 class="mb-2">Practice an AES answer</h5>
+    <p class="text-muted-aes small mb-3">
+      Enter the final ciphertext or plaintext. If you also know any round states, fill them in and the coach will mark each one.
+    </p>
+    <form method="post">
+      <div class="row g-3">
+        <div class="col-lg-4">
+          <label class="form-label-aes form-label">Key (32 hex chars)</label>
+          <input type="text" name="practice_key" class="form-control form-control-aes" value="{{ practice_key }}" maxlength="64">
+        </div>
+        <div class="col-lg-4">
+          <label class="form-label-aes form-label">
+            {% if practice_mode == 'decrypt' %}Ciphertext{% else %}Plaintext{% endif %} block
+          </label>
+          <input type="text" name="practice_block" class="form-control form-control-aes" value="{{ practice_block }}" maxlength="64">
+        </div>
+        <div class="col-lg-4">
+          <label class="form-label-aes form-label">Your final answer</label>
+          <input type="text" name="final_answer" class="form-control form-control-aes" value="{{ final_answer }}" maxlength="64" placeholder="32 hex chars">
+        </div>
+        <div class="col-12">
+          <div class="btn-group" role="group">
+            <input type="radio" class="btn-check" name="practice_mode" id="coachEnc" value="encrypt" {% if practice_mode != 'decrypt' %}checked{% endif %}>
+            <label class="btn btn-aes-outline" for="coachEnc">Encrypt</label>
+            <input type="radio" class="btn-check" name="practice_mode" id="coachDec" value="decrypt" {% if practice_mode == 'decrypt' %}checked{% endif %}>
+            <label class="btn btn-aes-outline" for="coachDec">Decrypt</label>
+          </div>
+        </div>
+        <div class="col-12">
+          <button class="btn btn-aes-outline coach-checkpoint-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#coachRoundAnswers" aria-expanded="false" aria-controls="coachRoundAnswers">
+            Add round checkpoints
+          </button>
+        </div>
+        <div class="col-12 collapse" id="coachRoundAnswers">
+          <div class="coach-checkpoint-grid">
+            {% for rnd in range(11) %}
+            <div>
+              <label class="form-label-aes form-label">After round {{ rnd }}</label>
+              <input type="text" name="round_answer_{{ rnd }}" class="form-control form-control-aes" value="{{ round_answers[rnd] }}" maxlength="64" placeholder="optional">
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-aes">Check my answer</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if practice_result %}
+<div class="card-aes mb-4">
+  <div class="card-body">
+    <div class="coach-result-summary {{ practice_result.final_check.status }}">
+      <div>
+        <div class="lesson-kicker">{{ practice_result.output_label }} answer</div>
+        <h5>
+          {% if practice_result.final_check.status == 'correct' %}
+          Correct final answer
+          {% else %}
+          Final answer needs work
+          {% endif %}
+        </h5>
+        <p class="mb-0">
+          {% if practice_result.answered_count %}
+          Round checkpoints: {{ practice_result.correct_count }}/{{ practice_result.answered_count }} submitted checkpoints correct.
+          {% else %}
+          Add round checkpoints to see exactly where your work first differs.
+          {% endif %}
+        </p>
+      </div>
+      <div>
+        <strong>Expected {{ practice_result.output_label }}</strong>
+        <code>{{ practice_result.expected_output }}</code>
+      </div>
+    </div>
+
+    <div class="coach-step-table mt-4">
+      <div class="coach-step-row coach-step-head">
+        <span>Step</span>
+        <span>Your answer</span>
+        <span>Expected</span>
+        <span>Status</span>
+      </div>
+      <div class="coach-step-row {{ practice_result.final_check.status }}">
+        <span>{{ practice_result.output_label }}</span>
+        <code>{{ practice_result.final_check.answer or 'blank' }}</code>
+        <code>{{ practice_result.final_check.expected }}</code>
+        <strong>{{ practice_result.final_check.message }}</strong>
+      </div>
+      {% for step in practice_result.step_checks %}
+      <div class="coach-step-row {{ step.status }}">
+        <span>{{ step.label }}</span>
+        <code>{{ step.answer or 'not submitted' }}</code>
+        <code>{{ step.expected }}</code>
+        <strong>{{ step.message }}</strong>
+      </div>
+      {% endfor %}
+    </div>
+
+    <details class="coach-expected-steps mt-4">
+      <summary>Show expected round grids</summary>
+      <div class="row g-3 mt-1">
+        {% for step in practice_result.step_checks %}
+        <div class="col-md-6 col-xl-4">
+          <div class="state-label">{{ step.label }}</div>
+          <div class="step-explain">{{ step.hint }}</div>
+          <div class="state-block"><pre>{{ step.grid }}</pre></div>
+        </div>
+        {% endfor %}
+      </div>
+    </details>
+  </div>
+</div>
+{% endif %}
+
+<div class="card-aes mb-4">
+  <div class="card-body">
+    <h5 class="mb-3">Operation explorer</h5>
+    <div class="coach-operation-grid mb-3">
+      <button type="button" class="coach-chip is-active" data-op="subbytes">SubBytes</button>
+      <button type="button" class="coach-chip" data-op="shiftrows">ShiftRows</button>
+      <button type="button" class="coach-chip" data-op="mixcolumns">MixColumns</button>
+      <button type="button" class="coach-chip" data-op="addroundkey">AddRoundKey</button>
+      <button type="button" class="coach-chip" data-op="keyexpansion">Key Expansion</button>
+      <button type="button" class="coach-chip" data-op="avalanche">Avalanche</button>
+    </div>
+    <div class="coach-display">
+      <div>
+        <div class="lesson-kicker" id="operationLabel">SubBytes</div>
+        <h5 id="operationTitle">Byte substitution</h5>
+        <p id="operationBody">
+          SubBytes replaces every byte using the AES S-box. This is the main non-linear step, which
+          makes AES much harder to describe with simple equations.
+        </p>
+      </div>
+      <div class="coach-state" aria-label="Example AES state">
+        <span>19</span><span>a0</span><span>9a</span><span>e9</span>
+        <span>3d</span><span>f4</span><span>c6</span><span>f8</span>
+        <span>e3</span><span>e2</span><span>8d</span><span>48</span>
+        <span>be</span><span>2b</span><span>2a</span><span>08</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card-aes mb-4">
+  <div class="card-body">
+    <h5 class="mb-2">Build one encryption round</h5>
+    <p class="text-muted-aes small mb-3">
+      Click the operations in the correct order for AES rounds 1-9.
+    </p>
+    <div class="coach-operation-grid mb-3">
+      <button type="button" class="coach-pick" data-step="SubBytes">SubBytes</button>
+      <button type="button" class="coach-pick" data-step="ShiftRows">ShiftRows</button>
+      <button type="button" class="coach-pick" data-step="MixColumns">MixColumns</button>
+      <button type="button" class="coach-pick" data-step="AddRoundKey">AddRoundKey</button>
+    </div>
+    <div class="round-builder mb-3" id="roundBuilder">
+      <span class="builder-empty">Your selected order will appear here.</span>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <button type="button" class="btn btn-aes" id="checkRound">Check order</button>
+      <button type="button" class="btn btn-aes-outline" id="resetRound">Reset</button>
+    </div>
+    <div class="coach-feedback mt-3" id="roundFeedback" role="status"></div>
+  </div>
+</div>
+
+<div class="card-aes">
+  <div class="card-body">
+    <h5 class="mb-3">Quick quiz</h5>
+    <div class="quiz-question">
+      <p>1. Which AES step uses the S-box?</p>
+      <button type="button" data-answer="wrong">ShiftRows</button>
+      <button type="button" data-answer="right">SubBytes</button>
+      <button type="button" data-answer="wrong">MixColumns</button>
+    </div>
+    <div class="quiz-question">
+      <p>2. What does Avalanche measure here?</p>
+      <button type="button" data-answer="wrong">How fast AES runs</button>
+      <button type="button" data-answer="right">How many bits differ after each round</button>
+      <button type="button" data-answer="wrong">How many keys are generated</button>
+    </div>
+    <div class="quiz-question">
+      <p>3. How many words are generated in AES-128 key expansion?</p>
+      <button type="button" data-answer="wrong">10</button>
+      <button type="button" data-answer="wrong">16</button>
+      <button type="button" data-answer="right">44</button>
+    </div>
+    <div class="coach-feedback mt-3" id="quizFeedback" role="status">Choose an answer for each question.</div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const operationCopy = {
+  subbytes: {
+    label: 'SubBytes',
+    title: 'Byte substitution',
+    body: 'SubBytes replaces every byte using the AES S-box. This is the main non-linear step, which makes AES much harder to describe with simple equations.'
+  },
+  shiftrows: {
+    label: 'ShiftRows',
+    title: 'Move bytes across columns',
+    body: 'ShiftRows rotates the rows of the state. This spreads byte positions so later column mixing combines data from different parts of the block.'
+  },
+  mixcolumns: {
+    label: 'MixColumns',
+    title: 'Mix each column',
+    body: 'MixColumns combines the four bytes in each column using finite-field math. A one-byte change can influence the whole column.'
+  },
+  addroundkey: {
+    label: 'AddRoundKey',
+    title: 'Inject the round key',
+    body: 'AddRoundKey XORs the state with the round key. This is where the secret key directly changes the data during each round.'
+  },
+  keyexpansion: {
+    label: 'Key Expansion',
+    title: 'Create round keys',
+    body: 'AES-128 expands one 128-bit key into 44 words. Every round gets its own 128-bit round key made from four words.'
+  },
+  avalanche: {
+    label: 'Avalanche',
+    title: 'Small change, large effect',
+    body: 'Avalanche compares two encryptions. After enough rounds, a tiny input or key change should affect about half of the output bits.'
+  }
+};
+
+document.querySelectorAll('.coach-chip').forEach((button) => {
+  button.addEventListener('click', () => {
+    document.querySelectorAll('.coach-chip').forEach((b) => b.classList.remove('is-active'));
+    button.classList.add('is-active');
+    const copy = operationCopy[button.dataset.op];
+    document.getElementById('operationLabel').textContent = copy.label;
+    document.getElementById('operationTitle').textContent = copy.title;
+    document.getElementById('operationBody').textContent = copy.body;
+  });
+});
+
+const chosenSteps = [];
+const correctSteps = ['SubBytes', 'ShiftRows', 'MixColumns', 'AddRoundKey'];
+const builder = document.getElementById('roundBuilder');
+const feedback = document.getElementById('roundFeedback');
+
+function renderBuilder() {
+  builder.innerHTML = '';
+  if (chosenSteps.length === 0) {
+    builder.innerHTML = '<span class="builder-empty">Your selected order will appear here.</span>';
+    return;
+  }
+  chosenSteps.forEach((step, index) => {
+    const item = document.createElement('span');
+    item.textContent = `${index + 1}. ${step}`;
+    builder.appendChild(item);
+  });
+}
+
+document.querySelectorAll('.coach-pick').forEach((button) => {
+  button.addEventListener('click', () => {
+    if (chosenSteps.length >= 4) return;
+    chosenSteps.push(button.dataset.step);
+    renderBuilder();
+    feedback.textContent = '';
+  });
+});
+
+document.getElementById('checkRound').addEventListener('click', () => {
+  const isCorrect = correctSteps.every((step, index) => chosenSteps[index] === step);
+  if (chosenSteps.length < 4) {
+    feedback.textContent = 'Pick four operations first.';
+    feedback.className = 'coach-feedback mt-3 is-warning';
+  } else if (isCorrect) {
+    feedback.textContent = 'Correct. Rounds 1-9 use SubBytes, ShiftRows, MixColumns, then AddRoundKey.';
+    feedback.className = 'coach-feedback mt-3 is-good';
+  } else {
+    feedback.textContent = 'Not quite. The correct order is SubBytes, ShiftRows, MixColumns, AddRoundKey.';
+    feedback.className = 'coach-feedback mt-3 is-bad';
+  }
+});
+
+document.getElementById('resetRound').addEventListener('click', () => {
+  chosenSteps.length = 0;
+  feedback.textContent = '';
+  renderBuilder();
+});
+
+let answered = 0;
+let score = 0;
+document.querySelectorAll('.quiz-question button').forEach((button) => {
+  button.addEventListener('click', () => {
+    const group = button.closest('.quiz-question');
+    if (group.dataset.answered === 'true') return;
+    group.dataset.answered = 'true';
+    answered += 1;
+    if (button.dataset.answer === 'right') {
+      score += 1;
+      button.classList.add('is-right');
+    } else {
+      button.classList.add('is-wrong');
+      group.querySelector('[data-answer="right"]').classList.add('is-right');
+    }
+    document.getElementById('quizFeedback').textContent = `Score: ${score}/${answered}`;
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}S-box / Rcon{% endblock %}
+{% block content %}
+<h1 class="page-title">S-box and Rcon</h1>
+<div class="learn-panel mb-4">
+  <h5>Why these tables matter</h5>
+  <p class="mb-0">
+    The S-box powers SubBytes, the inverse S-box reverses it, and Rcon supports key expansion.
+  </p>
+</div>
+<p class="page-subtitle">AES S-box, inverse S-box (16×16 hex), and round constants.</p>
+
+<ul class="nav nav-pills mb-4" role="tablist">
+  <li class="nav-item">
+    <a class="nav-link active btn-aes-outline me-2" data-bs-toggle="tab" href="#sbox">S-box</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link btn-aes-outline me-2" data-bs-toggle="tab" href="#inv">Inverse S-box</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link btn-aes-outline" data-bs-toggle="tab" href="#rcon">Rcon</a>
+  </li>
+</ul>
+
+<div class="tab-content">
+  <div class="tab-pane fade show active" id="sbox">
+    <p class="text-muted-aes small mb-3">
+      To substitute a byte, split its two hex digits: the first digit chooses the row and the second digit chooses the column.
+      Example: input <span class="hex-value">53</span> uses row <span class="hex-value">5</span>, column <span class="hex-value">3</span>, so the S-box output is the value at that cell.
+    </p>
+    <div class="card-aes">
+      <div class="card-body overflow-auto">
+        <table class="table sbox-table">
+          <thead><tr><th></th>{% for c in range(16) %}<th>{{ "%x"|format(c) }}</th>{% endfor %}</tr></thead>
+          <tbody>
+          {% for r in range(16) %}
+          <tr><th>{{ "%x"|format(r) }}</th>{% for c in range(16) %}<td>{{ "%02x"|format(sbox_grid[r][c]) }}</td>{% endfor %}</tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="tab-pane fade" id="inv">
+    <p class="text-muted-aes small mb-3">
+      The inverse S-box is read the same way, but it reverses SubBytes during decryption.
+    </p>
+    <div class="card-aes">
+      <div class="card-body overflow-auto">
+        <table class="table sbox-table">
+          <thead><tr><th></th>{% for c in range(16) %}<th>{{ "%x"|format(c) }}</th>{% endfor %}</tr></thead>
+          <tbody>
+          {% for r in range(16) %}
+          <tr><th>{{ "%x"|format(r) }}</th>{% for c in range(16) %}<td>{{ "%02x"|format(inv_sbox_grid[r][c]) }}</td>{% endfor %}</tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="tab-pane fade" id="rcon">
+    <p class="text-muted-aes small mb-3">Rcon[i] for i = 0..10 (key schedule round constants).</p>
+    <div class="card-aes">
+      <div class="card-body">
+        <p class="hex-value mb-0 font-monospace">{% for i in range(11) %}Rcon[{{ i }}] = 0x{{ "%02x"|format(rcon_list[i]) }}{% if not loop.last %} &nbsp; {% endif %}{% endfor %}</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

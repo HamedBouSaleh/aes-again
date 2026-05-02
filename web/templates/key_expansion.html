@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}Key Expansion{% endblock %}
+{% block content %}
+<h1 class="page-title">Key expansion</h1>
+<div class="learn-panel mb-4">
+  <h5>Why AES expands the key</h5>
+  <p class="mb-0">
+    AES expands one 128-bit key into 44 words: four words for each round key. Every fourth word uses
+    RotWord, SubWord, and Rcon.
+  </p>
+</div>
+<p class="page-subtitle">128-bit key → 44 words in 11 groups of 4 (one round key per group).</p>
+
+<div class="educational-grid mb-4">
+  <div class="mini-lesson">
+    <div class="lesson-kicker">Word</div>
+    <p>4 bytes, shown as 8 hex characters.</p>
+  </div>
+  <div class="mini-lesson">
+    <div class="lesson-kicker">Round key</div>
+    <p>Four words form one 128-bit round key.</p>
+  </div>
+  <div class="mini-lesson">
+    <div class="lesson-kicker">Schedule</div>
+    <p>Later keys are generated from earlier words.</p>
+  </div>
+</div>
+
+{% if error %}
+<div class="alert-aes alert-aes-danger mb-4">{{ error }}</div>
+{% endif %}
+
+<div class="card-aes mb-4">
+  <div class="card-body">
+    <form method="post">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-8">
+          <label class="form-label-aes form-label">Key (32 hex chars)</label>
+          <div class="input-group">
+            <input type="text" name="key" class="form-control form-control-aes" value="{{ key }}" maxlength="64">
+            <button type="button" class="btn btn-rand" title="Random key" data-random-target="key" data-random-type="key"><i class="bi bi-dice-5"></i></button>
+            <button type="button" class="btn btn-rand" title="Clear key" data-clear-target="key"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <div class="plaintext-helper" data-target="key" data-label="key text">
+            <div class="input-mode-toggle" aria-label="Key input mode">
+              <button type="button" data-mode="hex">Hex</button>
+              <button type="button" data-mode="text">Text</button>
+            </div>
+            <div class="plaintext-panel" hidden>
+              <input type="text" class="plaintext-source" placeholder="Type a 16-character key phrase">
+              <button type="button" class="plaintext-apply">Convert</button>
+            </div>
+            <div class="plaintext-status"></div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <button type="submit" class="btn btn-aes w-100">Generate key schedule</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if result %}
+<div class="card-aes mb-4">
+  <div class="card-body">
+    <h5 class="mb-3">Standard AES-128 key schedule formulas</h5>
+    <div class="key-formula-grid">
+      <div class="key-formula-card">
+        <div class="lesson-kicker">Initial words</div>
+        <code>w[0], w[1], w[2], w[3]</code>
+        <p>The original 128-bit key is split into four 32-bit words.</p>
+      </div>
+      <div class="key-formula-card">
+        <div class="lesson-kicker">Normal word</div>
+        <code>w[i] = w[i-4] XOR w[i-1]</code>
+        <p>This is used when <span class="hex-value">i</span> is not a multiple of 4.</p>
+      </div>
+      <div class="key-formula-card">
+        <div class="lesson-kicker">Every fourth word</div>
+        <code>w[i] = w[i-4] XOR SubWord(RotWord(w[i-1])) XOR Rcon[i/4]</code>
+        <p>This adds byte rotation, S-box substitution, and the round constant.</p>
+      </div>
+    </div>
+    <div class="key-term-list mt-3">
+      <div><strong>RotWord</strong><span>moves the first byte to the end, for example <code>aabbccdd</code> becomes <code>bbccddaa</code>.</span></div>
+      <div><strong>SubWord</strong><span>replaces each byte using the S-box table.</span></div>
+      <div><strong>Rcon</strong><span>is XORed into the first byte of every fourth generated word.</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="card-aes">
+  <div class="card-body">
+    <p class="mb-3"><strong>Key:</strong> <span class="hex-value">{{ result.key_hex }}</span></p>
+    <h5 class="mb-3">Round keys (w[0]..w[43])</h5>
+    <p class="step-explain">
+      Each row is one 128-bit round key.
+    </p>
+    <div class="table-responsive">
+      <table class="table table-aes">
+        <thead><tr><th>Round</th><th>Words in this round key</th><th>Meaning</th></tr></thead>
+        <tbody>
+        {% for rnd in range(11) %}
+        <tr>
+          <td>{{ rnd }}</td>
+          <td>
+            <div class="word-list">
+              {% for word in result.round_keys[rnd] %}
+              <div class="word-chip">
+                <span>w[{{ rnd * 4 + loop.index0 }}]</span>
+                <code>{{ word }}</code>
+              </div>
+              {% endfor %}
+            </div>
+          </td>
+          <td>
+            {% if rnd == 0 %}
+            The original key split into its first four 32-bit words.
+            {% else %}
+            These four generated words form round key {{ rnd }}.
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card-aes mt-4">
+  <div class="card-body">
+    <h5 class="mb-3">How each word was calculated</h5>
+    <p class="step-explain">
+      The first four words come directly from the key. The remaining words are generated one by one from earlier words.
+    </p>
+    <div class="table-responsive">
+      <table class="table table-aes key-detail-table">
+        <thead>
+          <tr>
+            <th>Word</th>
+            <th>Formula</th>
+            <th>Calculation details</th>
+            <th>Result</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for word in result.word_details %}
+        <tr>
+          <td>w[{{ word.index }}]</td>
+          <td><code>{{ word.formula }}</code></td>
+          <td>
+            {% if word.index < 4 %}
+            Taken directly from the original key.
+            {% elif word.special %}
+            <div class="key-calc-list">
+              <span>RotWord(w[{{ word.index - 1 }}]) = <code>{{ word.rotated }}</code></span>
+              <span>SubWord(...) = <code>{{ word.substituted }}</code></span>
+              <span>Rcon = <code>{{ word.rcon }}</code></span>
+              <span>temp = <code>{{ word.substituted }}</code> XOR <code>{{ word.rcon }}</code> = <code>{{ word.temp }}</code></span>
+              <span>w[{{ word.index - 4 }}] XOR temp = <code>{{ word.from_four_back }}</code> XOR <code>{{ word.temp }}</code></span>
+            </div>
+            {% else %}
+            <div class="key-calc-list">
+              <span>w[{{ word.index - 4 }}] XOR w[{{ word.index - 1 }}]</span>
+              <span><code>{{ word.from_four_back }}</code> XOR <code>{{ word.previous }}</code></span>
+            </div>
+            {% endif %}
+          </td>
+          <td><span class="hex-value">{{ word.word }}</span></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<section class="home-hero">
+  <div>
+    <div class="hero-kicker"><i class="bi bi-cpu"></i> AES-128 learning workspace</div>
+    <h1 class="page-title">Explore AES round by round</h1>
+    <p class="page-subtitle">A modern, interactive lab for single-round stepping, full encryption, avalanche analysis, key expansion, and AES tables.</p>
+    <div class="hero-actions">
+      <a href="{{ url_for('main.single_round') }}" class="btn btn-aes"><i class="bi bi-play-fill"></i> Start stepping</a>
+      <a href="{{ url_for('main.coach') }}" class="btn btn-aes-outline"><i class="bi bi-stars"></i> Open AES Coach</a>
+    </div>
+  </div>
+  <div class="hero-state" aria-label="AES state preview">
+    <div class="state-chip">state[4x4]</div>
+    <div class="hero-grid">
+      <span>00</span><span>11</span><span>22</span><span>33</span>
+      <span>44</span><span>55</span><span>66</span><span>77</span>
+      <span>88</span><span>99</span><span>aa</span><span>bb</span>
+      <span>cc</span><span>dd</span><span>ee</span><span>ff</span>
+    </div>
+  </div>
+</section>
+
+<div class="row g-4">
+  <div class="col-md-6 col-lg-4">
+    <div class="card-tool">
+      <h5 class="card-title"><i class="bi bi-1-circle-fill"></i> Single Round</h5>
+      <p class="card-text">Step through one AES round: SubBytes, ShiftRows, MixColumns, AddRoundKey. Choose round 0–10.</p>
+      <a href="{{ url_for('main.single_round') }}" class="tool-link">Open <i class="bi bi-arrow-right"></i></a>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-4">
+    <div class="card-tool">
+      <h5 class="card-title"><i class="bi bi-2-circle-fill"></i> Full AES</h5>
+      <p class="card-text">Encrypt or decrypt one 128-bit block. View state after each of the 11 rounds.</p>
+      <a href="{{ url_for('main.full_aes') }}" class="tool-link">Open <i class="bi bi-arrow-right"></i></a>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-4">
+    <div class="card-tool">
+      <h5 class="card-title"><i class="bi bi-3-circle-fill"></i> Avalanche</h5>
+      <p class="card-text">Compare two encryptions: same key / different block or same block / different key. Bit mismatch per round.</p>
+      <a href="{{ url_for('main.avalanche') }}" class="tool-link">Open <i class="bi bi-arrow-right"></i></a>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-4">
+    <div class="card-tool">
+      <h5 class="card-title"><i class="bi bi-key-fill"></i> Key Expansion</h5>
+      <p class="card-text">Expand 128-bit key to 44 words (11 round keys). Display in groups of 4 words.</p>
+      <a href="{{ url_for('main.key_expansion_page') }}" class="tool-link">Open <i class="bi bi-arrow-right"></i></a>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-4">
+    <div class="card-tool">
+      <h5 class="card-title"><i class="bi bi-grid-3x3-gap-fill"></i> S-box / Rcon</h5>
+      <p class="card-text">View AES S-box, inverse S-box (16×16), and round constants Rcon.</p>
+      <a href="{{ url_for('main.sbox') }}" class="tool-link">Open <i class="bi bi-arrow-right"></i></a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

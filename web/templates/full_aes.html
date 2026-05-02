@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Full AES{% endblock %}
+{% block content %}
+<h1 class="page-title">Full AES encrypt / decrypt</h1>
+<p class="page-subtitle">Encrypt or decrypt one 128-bit block. View state after each round.</p>
+
+<div class="learn-panel mb-4">
+  <h5>How to read the round states</h5>
+  <p class="mb-0">
+    AES-128 uses an initial key addition plus 10 rounds. The grids show the state after each round
+    boundary during encryption or decryption.
+  </p>
+</div>
+
+<div class="educational-grid mb-4">
+  <div class="mini-lesson">
+    <div class="lesson-kicker">Encrypt</div>
+    <p>Plaintext moves forward through AES into ciphertext.</p>
+  </div>
+  <div class="mini-lesson">
+    <div class="lesson-kicker">Decrypt</div>
+    <p>Ciphertext uses inverse steps to recover plaintext.</p>
+  </div>
+  <div class="mini-lesson">
+    <div class="lesson-kicker">State</div>
+    <p>Each grid is the internal state after one round boundary.</p>
+  </div>
+</div>
+
+{% if error %}
+<div class="alert-aes alert-aes-danger mb-4">{{ error }}</div>
+{% endif %}
+
+<div class="card-aes mb-4">
+  <div class="card-body">
+    <form method="post">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label-aes form-label">Key</label>
+          <div class="input-group">
+            <input type="text" name="key" class="form-control form-control-aes" value="{{ key }}" maxlength="64">
+            <button type="button" class="btn btn-rand" title="Random key" data-random-target="key" data-random-type="key"><i class="bi bi-dice-5"></i></button>
+            <button type="button" class="btn btn-rand" title="Clear key" data-clear-target="key"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <div class="plaintext-helper" data-target="key" data-label="key text">
+            <div class="input-mode-toggle" aria-label="Key input mode">
+              <button type="button" data-mode="hex">Hex</button>
+              <button type="button" data-mode="text">Text</button>
+            </div>
+            <div class="plaintext-panel" hidden>
+              <input type="text" class="plaintext-source" placeholder="Type a key phrase">
+              <button type="button" class="plaintext-apply">Convert</button>
+            </div>
+            <div class="plaintext-status"></div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label-aes form-label">Block </label>
+          <div class="input-group">
+            <input type="text" name="block" class="form-control form-control-aes" value="{{ block }}" maxlength="64">
+            <button type="button" class="btn btn-rand" title="Random block" data-random-target="block" data-random-type="block"><i class="bi bi-dice-5"></i></button>
+            <button type="button" class="btn btn-rand" title="Clear block" data-clear-target="block"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <div class="plaintext-helper" data-target="block" data-label="message text">
+            <div class="input-mode-toggle" aria-label="Block input mode">
+              <button type="button" data-mode="hex">Hex</button>
+              <button type="button" data-mode="text">Text</button>
+            </div>
+            <div class="plaintext-panel" hidden>
+              <input type="text" class="plaintext-source" placeholder="Type a message">
+              <button type="button" class="plaintext-apply">Convert</button>
+            </div>
+            <div class="plaintext-status"></div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="btn-group" role="group">
+            <input type="radio" class="btn-check" name="mode" id="mEnc" value="encrypt" {% if mode == 'encrypt' %}checked{% endif %}>
+            <label class="btn btn-aes-outline" for="mEnc">Encrypt</label>
+            <input type="radio" class="btn-check" name="mode" id="mDec" value="decrypt" {% if mode == 'decrypt' %}checked{% endif %}>
+            <label class="btn btn-aes-outline" for="mDec">Decrypt</label>
+          </div>
+          <button type="submit" class="btn btn-aes ms-2">Run</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if result %}
+<div class="card-aes mb-3">
+  <div class="card-body">
+    <p class="mb-2"><strong>{{ result.input_label }}:</strong> <span class="hex-value">{{ result.input_hex }}</span></p>
+    <p class="mb-0"><strong>{{ result.output_label }}:</strong> <span class="hex-value">{{ result.output_hex }}</span></p>
+    <p class="step-explain mt-3 mb-0">
+      {% if result.mode == "encrypt" %}
+      The input is plaintext; the final state is ciphertext.
+      {% else %}
+      The input is ciphertext; inverse rounds recover plaintext.
+      {% endif %}
+    </p>
+  </div>
+</div>
+<div class="card-aes">
+  <div class="card-body">
+    <h5 class="mb-4">State after each round</h5>
+    {% for rnd in range(11) %}
+    <div class="mb-4">
+      <div class="state-label">After round {{ rnd }}</div>
+      <div class="step-explain">
+        {% if result.mode == "decrypt" and rnd == 0 %}
+        Decryption starts by undoing the final AddRoundKey.
+        {% elif result.mode == "decrypt" and rnd < 10 %}
+        An inverse middle round reverses the matching encryption round.
+        {% elif result.mode == "decrypt" %}
+        Final recovered plaintext state.
+        {% elif rnd == 0 %}
+        Plaintext after the initial key XOR.
+        {% elif rnd < 10 %}
+        State after a full middle round.
+        {% else %}
+        Final output state; the last round skips MixColumns.
+        {% endif %}
+      </div>
+      <div class="state-block"><pre>{{ result.rounds[rnd] }}</pre></div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

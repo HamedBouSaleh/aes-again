@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}File Encrypt / Decrypt{% endblock %}
+{% block content %}
+<h1 class="page-title">File Encrypt / Decrypt</h1>
+<p class="page-subtitle">Upload a Word document, choose a key, then download the encrypted or decrypted file.</p>
+
+{% if error %}
+<div class="alert-aes alert-aes-danger mb-4">{{ error }}</div>
+{% endif %}
+
+<div class="card-aes mb-4">
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data">
+      <div class="row g-3">
+        <div class="col-lg-7">
+          <label class="form-label-aes form-label">Key </label>
+          <div class="input-group">
+            <input type="text" name="key" class="form-control form-control-aes" value="{{ key }}" maxlength="64">
+            <button type="button" class="btn btn-rand" title="Random key" data-random-target="key" data-random-type="key"><i class="bi bi-dice-5"></i></button>
+            <button type="button" class="btn btn-rand" title="Clear key" data-clear-target="key"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <div class="plaintext-helper" data-target="key" data-label="key text">
+            <div class="input-mode-toggle" aria-label="Key input mode">
+              <button type="button" data-mode="hex">Hex</button>
+              <button type="button" data-mode="text">Text</button>
+            </div>
+            <div class="plaintext-panel" hidden>
+              <input type="text" class="plaintext-source" placeholder="Type a key phrase">
+              <button type="button" class="plaintext-apply">Convert</button>
+            </div>
+            <div class="plaintext-status"></div>
+          </div>
+        </div>
+        <div class="col-lg-5">
+          <label class="form-label-aes form-label">Document file</label>
+          <input type="file" name="document" class="form-control form-control-aes" accept=".docx,.docx">
+          <div class="text-muted-aes small mt-2">Use <span class="hex-value">.docx</span> for encryption or decryption. Max 8 MB.</div>
+        </div>
+        <div class="col-12">
+          <div class="btn-group" role="group">
+            <input type="radio" class="btn-check" name="mode" id="docEnc" value="encrypt" {% if mode != 'decrypt' %}checked{% endif %}>
+            <label class="btn btn-aes-outline" for="docEnc">Encrypt .docx</label>
+            <input type="radio" class="btn-check" name="mode" id="docDec" value="decrypt" {% if mode == 'decrypt' %}checked{% endif %}>
+            <label class="btn btn-aes-outline" for="docDec">Decrypt .docx</label>
+          </div>
+          <button type="submit" class="btn btn-aes ms-2">Process document</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<details class="doc-help mb-4">
+  <summary>What this page does</summary>
+  <p>
+    A Word document can include text, images, tables, and formatting. This page encrypts the complete file,
+    not just the visible text. The encrypted file will not open in Word until it is decrypted with the same key.
+  </p>
+</details>
+
+{% if result %}
+<div class="card-aes">
+  <div class="card-body">
+    <div class="doc-result-head mb-4">
+      <div>
+        <div class="lesson-kicker">{{ result.label }}</div>
+        <h5>{{ result.output_name }}</h5>
+        <p class="mb-0">Input: {{ result.input_name }} ({{ result.input_size }}) · Output: {{ result.output_size }}</p>
+      </div>
+      <a
+        class="btn btn-aes"
+        download="{{ result.output_name }}"
+        href="data:{{ result.download_mime }};base64,{{ result.download_b64 }}"
+      >
+        <i class="bi bi-download"></i> Download output
+      </a>
+    </div>
+    <p class="step-explain">
+      {% if result.mode == "encrypt" %}
+      The encrypted file is ready. Download the <span class="hex-value">.docx</span> output and keep the same key for decryption.
+      {% else %}
+      The decrypted output is a Word document again. Download it and open it with Word or another DOCX viewer.
+      {% endif %}
+    </p>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
