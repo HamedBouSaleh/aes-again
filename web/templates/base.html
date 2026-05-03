@@ -169,14 +169,26 @@
     window.addEventListener('scroll', updateBackToTop, { passive: true });
     updateBackToTop();
 
+    // Convert text to hex for a SINGLE 16-byte AES block (key, single-round block)
     function textToSingleBlockHex(text) {
       const encoded = new TextEncoder().encode(text);
       const block = new Uint8Array(16);
       block.set(encoded.slice(0, 16));
       const hex = Array.from(block, b => b.toString(16).padStart(2, '0')).join('');
       let note = 'Exactly 16 bytes converted to one AES block.';
-      if (encoded.length < 16)      note = `Text was ${encoded.length} byte(s), so ${16-encoded.length} zero byte(s) were added.`;
-      else if (encoded.length > 16) note = `Text was ${encoded.length} byte(s). Only the first 16 bytes were used.`;
+      if (encoded.length < 16)      note = `Text was ${encoded.length} byte(s), padded to 16 bytes.`;
+      else if (encoded.length > 16) note = `Text was ${encoded.length} byte(s). Using first 16 bytes (key must be exactly 16 bytes).`;
+      return { hex, note };
+    }
+
+    // Convert text to hex for MULTI-BLOCK input (full-aes block field)
+    // Sends the FULL text — server splits into blocks automatically
+    function textToFullHex(text) {
+      const encoded = new TextEncoder().encode(text);
+      const hex = Array.from(encoded, b => b.toString(16).padStart(2, '0')).join('');
+      const bytes = encoded.length;
+      const blocks = Math.ceil(bytes / 16);
+      const note = `${bytes} byte(s) → ${blocks} block${blocks !== 1 ? 's' : ''} (server will PKCS#7-pad the last block if needed).`;
       return { hex, note };
     }
 
@@ -190,6 +202,10 @@
       const textMode   = helper.querySelector('[data-mode="text"]');
       const textPanel  = helper.querySelector('.plaintext-panel');
 
+      // Use full-text conversion when data-no-truncate is set (block field on full-aes page)
+      const noTruncate = helper.dataset.noTruncate === 'true';
+      const convertFn  = noTruncate ? textToFullHex : textToSingleBlockHex;
+
       function setMode(mode) {
         const target = document.querySelector(`input[name="${targetName}"]`);
         const isText = mode === 'text';
@@ -198,7 +214,11 @@
         textMode.classList.toggle('is-active', isText);
         textPanel.hidden = !isText;
         if (target) { target.readOnly = isText; target.classList.toggle('converted-from-text', isText); }
-        status.textContent = isText ? `Text mode: enter ${label}, then convert it to one AES block.` : 'Hex mode: type or paste exactly 32 hex characters.';
+        if (noTruncate) {
+          status.textContent = isText ? `Text mode: type any message — the full text will be encrypted across as many blocks as needed.` : 'Hex mode: paste any hex — long inputs are split into 16-byte blocks automatically.';
+        } else {
+          status.textContent = isText ? `Text mode: enter ${label}, then convert.` : 'Hex mode: type or paste hex characters.';
+        }
         status.classList.remove('is-warning');
       }
 
@@ -210,7 +230,7 @@
         if (!target) return;
         const text = source.value;
         if (!text) { status.textContent = `Enter ${label} first.`; status.classList.add('is-warning'); return; }
-        const converted = textToSingleBlockHex(text);
+        const converted = convertFn(text);
         target.value = converted.hex;
         status.textContent = converted.note;
         status.classList.remove('is-warning');
@@ -219,7 +239,7 @@
       helper.closest('form')?.addEventListener('submit', () => {
         if (helper.dataset.mode !== 'text' || !source.value) return;
         const target = document.querySelector(`input[name="${targetName}"]`);
-        if (target) target.value = textToSingleBlockHex(source.value).hex;
+        if (target) target.value = convertFn(source.value).hex;
       });
 
       setMode('hex');
