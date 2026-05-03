@@ -1,12 +1,43 @@
 {% extends "base.html" %}
-{% block title %}Full AES{% endblock %}
+{% block title %}Full AES
+{% block extra_scripts %}
+<script>
+// Override plaintext conversion for the block field on this page
+// so the FULL text is converted to hex (not capped at 16 bytes)
+document.addEventListener('DOMContentLoaded', function () {
+  const blockHelper = document.querySelector('.plaintext-helper[data-target="block"]');
+  if (!blockHelper) return;
+  const applyBtn = blockHelper.querySelector('.plaintext-apply');
+  const source   = blockHelper.querySelector('.plaintext-source');
+  const status   = blockHelper.querySelector('.plaintext-status');
+  const hexInput = document.querySelector('input[name="block"]');
+  if (!applyBtn || !source || !hexInput) return;
+
+  applyBtn.addEventListener('click', function (e) {
+    e.stopImmediatePropagation(); // prevent the global handler running
+    const text = source.value;
+    if (!text) { status.textContent = 'Enter some text first.'; return; }
+    // Convert full text to hex — no length cap
+    const hex = Array.from(new TextEncoder().encode(text))
+                     .map(b => b.toString(16).padStart(2, '0'))
+                     .join('');
+    hexInput.value = hex;
+    const bytes = Math.ceil(hex.length / 2);
+    const blocks = Math.ceil(bytes / 16);
+    status.textContent = `${bytes} bytes → ${blocks} block${blocks !== 1 ? 's' : ''} (${hex.length} hex chars)`;
+  }, true); // capture phase so it fires before the global handler
+});
+</script>
+{% endblock %}
+
+{% endblock %}
 {% block content %}
 <h1 class="page-title">Full AES encrypt / decrypt</h1>
-<p class="page-subtitle">Encrypt or decrypt one 128-bit block. View state after each round.</p>
+<p class="page-subtitle">Encrypt or decrypt any length input. Long inputs are split into 16-byte blocks automatically.</p>
 
 <div class="learn-panel mb-4">
   <h5>How to read the round states</h5>
-  <p class="mb-0">AES-128 uses an initial key addition plus 10 rounds. The grids show the state after each round boundary during encryption or decryption.</p>
+  <p class="mb-0">AES-128 uses an initial key addition plus 10 rounds. For inputs longer than 16 bytes, each block is processed separately. The grids below show the first block's round states.</p>
 </div>
 
 <div class="educational-grid mb-4">
@@ -45,18 +76,18 @@
         <div class="col-md-6">
           <label class="form-label-aes form-label">Block</label>
           <div class="input-group">
-            <input type="text" name="block" class="form-control form-control-aes" value="{{ block }}" maxlength="64">
+            <input type="text" name="block" id="block-input" class="form-control form-control-aes" value="{{ block }}">
             <button type="button" class="btn btn-rand" title="Random block" data-random-target="block" data-random-type="block"><i class="bi bi-dice-5"></i></button>
             <button type="button" class="btn btn-rand" title="Clear block"  data-clear-target="block"><i class="bi bi-x-lg"></i></button>
           </div>
-          <div class="plaintext-helper" data-target="block" data-label="message text">
+          <div class="plaintext-helper" data-target="block" data-label="message text" data-no-truncate="true">
             <div class="input-mode-toggle" aria-label="Block input mode">
               <button type="button" data-mode="hex">Hex</button>
               <button type="button" data-mode="text">Text</button>
             </div>
             <div class="plaintext-panel" hidden>
-              <input type="text" class="plaintext-source" placeholder="Type a message">
-              <button type="button" class="plaintext-apply">Convert</button>
+              <textarea class="plaintext-source" rows="2" placeholder="Type any message — long inputs are split into blocks automatically"></textarea>
+              <button type="button" class="plaintext-apply">Convert to hex</button>
             </div>
             <div class="plaintext-status"></div>
           </div>
@@ -80,6 +111,21 @@
   <div class="card-body">
     <p class="mb-2"><strong>{{ result.input_label }}:</strong> <span class="hex-value">{{ result.input_hex }}</span></p>
     <p class="mb-3"><strong>{{ result.output_label }}:</strong> <span class="hex-value">{{ result.output_hex }}</span></p>
+    {% if result.num_blocks > 1 %}
+    <div class="learn-panel mb-3" style="font-size:0.88rem">
+      <strong>{{ result.num_blocks }} blocks</strong> — input was {{ result.original_byte_len }} bytes,
+      split into {{ result.num_blocks }} × 16-byte blocks{% if result.original_byte_len % 16 != 0 %} (last block PKCS#7-padded){% endif %}.
+      <br>Round states below show <strong>Block 1</strong>. Each block is encrypted independently with the same key.
+      <div class="mt-2">
+        {% for br in result.block_results %}
+        <div style="font-family:monospace; font-size:0.82rem; margin-top:4px">
+          Block {{ loop.index }}: <span style="color:var(--accent)">{{ br.input_hex }}</span>
+          → <span style="color:var(--success, #4ade80)">{{ br.output_hex }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
     <p class="step-explain mb-3">
       {% if result.mode == "encrypt" %}The input is plaintext; the final state is ciphertext.
       {% else %}The input is ciphertext; inverse rounds recover plaintext.{% endif %}

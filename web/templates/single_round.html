@@ -18,9 +18,9 @@
     <form method="post">
       <div class="row g-3">
         <div class="col-md-6">
-          <label class="form-label-aes form-label">Key (32 hex chars)</label>
+          <label class="form-label-aes form-label">Key</label>
           <div class="input-group">
-            <input type="text" name="key" class="form-control form-control-aes" value="{{ key }}" placeholder="000102030405060708090a0b0c0d0e0f" maxlength="64">
+            <input type="text" name="key" class="form-control form-control-aes" value="{{ key }}" placeholder="Up to 32 hex chars">
             <button type="button" class="btn btn-rand" title="Random key"  data-random-target="key"   data-random-type="key"><i class="bi bi-dice-5"></i></button>
             <button type="button" class="btn btn-rand" title="Clear key"   data-clear-target="key"><i class="bi bi-x-lg"></i></button>
           </div>
@@ -30,16 +30,16 @@
               <button type="button" data-mode="text">Text</button>
             </div>
             <div class="plaintext-panel" hidden>
-              <input type="text" class="plaintext-source" placeholder="Type a 16-character key phrase">
+              <input type="text" class="plaintext-source" placeholder="Type a key phrase (up to 16 chars)">
               <button type="button" class="plaintext-apply">Convert</button>
             </div>
             <div class="plaintext-status"></div>
           </div>
         </div>
         <div class="col-md-6">
-          <label class="form-label-aes form-label">Data block (32 hex chars)</label>
+          <label class="form-label-aes form-label">Data block</label>
           <div class="input-group">
-            <input type="text" name="block" class="form-control form-control-aes" value="{{ block }}" placeholder="00112233445566778899aabbccddeeff" maxlength="64">
+            <input type="text" name="block" class="form-control form-control-aes" value="{{ block }}" placeholder="Any hex length — first 16 bytes used">
             <button type="button" class="btn btn-rand" title="Random block" data-random-target="block" data-random-type="block"><i class="bi bi-dice-5"></i></button>
             <button type="button" class="btn btn-rand" title="Clear block"  data-clear-target="block"><i class="bi bi-x-lg"></i></button>
           </div>
@@ -49,7 +49,7 @@
               <button type="button" data-mode="text">Text</button>
             </div>
             <div class="plaintext-panel" hidden>
-              <input type="text" class="plaintext-source" placeholder="Type a 16-character message">
+              <input type="text" class="plaintext-source" placeholder="Type a message (first 16 bytes used for single-round)">
               <button type="button" class="plaintext-apply">Convert</button>
             </div>
             <div class="plaintext-status"></div>
